@@ -35,7 +35,13 @@ fi
 sudo systemctl enable --now NetworkManager
 
 echo "=== 4. Enabling SDDM Display Manager and Graphical Boot ==="
-sudo systemctl enable sddm
+# Agama's minimal role can leave /etc/systemd/system/display-manager.service
+# already symlinked to something else (seen: display-manager-legacy.service).
+# systemctl enable refuses to clobber an existing symlink without --force.
+if [ -e /etc/systemd/system/display-manager.service ]; then
+    echo "--- Existing display-manager.service symlink found, pointing to: $(readlink -f /etc/systemd/system/display-manager.service) ---"
+fi
+sudo systemctl enable --force sddm
 sudo systemctl set-default graphical.target
 
 echo "=== 5. Installing Cockpit & Custom Tools (no recommends, this install only) ==="
