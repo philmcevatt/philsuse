@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# philsuse.sh — v0.0.5
+# philsuse.sh — v0.0.11
 # Strategy change: install the base with recommends ON. --no-recommends was the
 # root cause of nearly every issue in v0.0.1-v0.0.4 (missing sddm-config-wayland,
 # sddm-wayland-miriway, wallpaper backend, etc.) — those are all recommends of
@@ -63,17 +63,79 @@ fi
 sudo systemctl enable --force sddm
 sudo systemctl set-default graphical.target
 
-echo "=== 6. Installing Cockpit & Custom Tools (no recommends, this install only) ==="
+echo "=== 6. Printing/scanning, Samba client, Snapper GUI, Discover, Myrlyn ==="
+# Deliberate additions confirmed against a full Agama KDE install — comment out
+# any block below you don't want on a given machine (e.g. laptop vs desktop).
+# Printing/scanning: driver packages only, absent from the minimal base.
+sudo zypper install -y \
+    gutenprint \
+    sane-backends \
+    libKSaneCore6-1 \
+    libKSaneWidgets6 \
+    libksane-icons \
+    libksane-lang
+# Samba: deliberately OFF for now — no network/NAS set up yet, and Tumbleweed
+# may not even be the distro in use by the time one exists. Uncomment if/when
+# needed (client-only — not installing samba/samba-dcerpc/samba-python3 server
+# capability). Unrelated to the /mnt/d and /mnt/e ntfs3 fstab mounts either way.
+# sudo zypper install -y \
+#     samba-client \
+#     samba-client-libs \
+#     cifs-utils
+# Snapper: core + zypp-plugin + snapperd (D-Bus service) are all already
+# installed by patterns-kde-kde_plasma (confirmed — snapperd ships inside the
+# snapper package, not separately). snapper-cleanup.timer and
+# snapper-timeline.timer are already enabled too. Only the YaST GUI module is
+# actually missing.
+sudo zypper install -y \
+    yast2-snapper
+# Discover: software-centre GUI, useful for Flatpak installs and troubleshooting
+# guides that assume it exists.
+sudo zypper install -y \
+    discover6 \
+    discover6-backend-flatpak \
+    discover6-backend-fwupd \
+    discover6-backend-packagekit \
+    discover6-notifier
+# Myrlyn: successor to YaST's software-management module.
+sudo zypper install -y \
+    myrlyn
+
+echo "=== 7. Installing Cockpit, Firefox & Custom Tools ==="
 sudo zypper install -y \
     cockpit \
     cockpit-system \
     cockpit-podman \
+    cockpit-client-launcher \
+    firefox \
     git \
     curl \
     fastfetch
 
-echo "=== 7. Enabling Cockpit Service ==="
+echo "=== 8. Enabling Cockpit Service ==="
 sudo systemctl enable --now cockpit.socket
+
+echo "=== 9. Packman codecs via opi ==="
+# opi adds the Packman repo (higher priority than official repos), runs
+# zypper dist-upgrade --from packman --allow-vendor-change, then installs the
+# gstreamer-plugins-{good,bad,ugly} codec set. Confirmed against opi's official
+# GitHub README and the openSUSE docs codecs page — -n is opi's documented
+# non-interactive flag.
+# NOTE — deliberate trade-off, not a bug: once run, Packman becomes the sole
+# permitted provider for any package this touches, so openSUSE's own repos will
+# no longer update those specific packages. That's opi's/Packman's normal,
+# documented behaviour for codecs, not something to "fix".
+sudo zypper install -y opi
+opi -n codecs
+
+echo "=== 10. Fixing Bash multi-line paste (bracketed paste mode) ==="
+# openSUSE's base doesn't enable Readline's bracketed paste mode by default
+# (unlike e.g. Fedora) — without it, Bash executes each line of a pasted
+# multi-line block as it's received instead of waiting, which is dangerous for
+# anything with a placeholder (<your username here>) meant to be edited first.
+if ! grep -qxF 'set enable-bracketed-paste on' ~/.inputrc 2>/dev/null; then
+    echo 'set enable-bracketed-paste on' >> ~/.inputrc
+fi
 
 echo "=== Done! Reboot into the minimal KDE environment. ==="
 echo "--- After reboot, sanity-check: is there a network widget, and does resolution/scaling look right? ---"
