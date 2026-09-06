@@ -259,61 +259,6 @@ systemctl enable --now libvirtd || true
 usermod -aG libvirt "${TARGET_USER}" 2>/dev/null || true
 usermod -aG kvm "${TARGET_USER}" 2>/dev/null || true
 
-############################################################
-# KDE CONNECT FIREWALL
-# Allows KDE Connect through Fedora's public firewalld zone.
-############################################################
-section "KDE Connect firewall"
-KDECONNECT_FIREWALL_READY=true
-if ! firewall-cmd --permanent \
-  --zone=public \
-  --add-service=kdeconnect; then
-  warn "Failed to enable KDE Connect firewall service"
-  KDECONNECT_FIREWALL_READY=false
-fi
-if ! firewall-cmd --reload; then
-  warn "Failed to reload firewall"
-  KDECONNECT_FIREWALL_READY=false
-fi
-if [[ "${KDECONNECT_FIREWALL_READY}" == "true" ]]; then
-  complete_section "KDE Connect firewall"
-fi
-
-############################################################
-# LOCALSEND FIREWALL
-# Allows LocalSend through firewalld.
-# Also opens the libvirt zone, so VM guests can reach LocalSend
-############################################################
-section "LocalSend firewall"
-LOCALSEND_FIREWALL_READY=true
-if ! firewall-cmd --add-port=53317/tcp --permanent; then
-  warn "Failed to open LocalSend TCP port (public zone)"
-  LOCALSEND_FIREWALL_READY=false
-fi
-if ! firewall-cmd --add-port=53317/udp --permanent; then
-  warn "Failed to open LocalSend UDP port (public zone)"
-  LOCALSEND_FIREWALL_READY=false
-fi
-if firewall-cmd --get-zones | grep -qw libvirt; then
-  if ! firewall-cmd --zone=libvirt --add-port=53317/tcp --permanent; then
-    warn "Failed to open LocalSend TCP port (libvirt zone)"
-    LOCALSEND_FIREWALL_READY=false
-  fi
-  if ! firewall-cmd --zone=libvirt --add-port=53317/udp --permanent; then
-    warn "Failed to open LocalSend UDP port (libvirt zone)"
-    LOCALSEND_FIREWALL_READY=false
-  fi
-else
-  note "libvirt firewalld zone not present, skipping VM guest access for LocalSend."
-fi
-if ! firewall-cmd --reload; then
-  warn "Failed to reload firewall"
-  LOCALSEND_FIREWALL_READY=false
-fi
-if [[ "${LOCALSEND_FIREWALL_READY}" == "true" ]]; then
-  complete_section "LocalSend firewall"
-fi
-
 # -----------------------------
 # Boot target
 # -----------------------------
