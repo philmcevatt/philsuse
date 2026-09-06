@@ -259,6 +259,29 @@ systemctl enable --now libvirtd || true
 usermod -aG libvirt "${TARGET_USER}" 2>/dev/null || true
 usermod -aG kvm "${TARGET_USER}" 2>/dev/null || true
 
+############################################################
+# KDE CONNECT FIREWALL
+# Allows KDE Connect through Fedora's public firewalld zone.
+############################################################
+firewall-cmd --permanent --zone=home --add-service=kdeconnect
+firewall-cmd --reload
+
+############################################################
+# LOCALSEND FIREWALL
+# Allows LocalSend through firewalld.
+############################################################
+sudo firewall-cmd --permanent --zone=public --add-port=53317/tcp
+sudo firewall-cmd --permanent --zone=public --add-port=53317/udp
+sudo firewall-cmd --reload
+
+############################################################
+# LIBVIRT FIREWALL
+# Allows LibVirt through firewalld.
+############################################################
+firewall-cmd --zone=libvirt --add-port=53317/tcp --permanent
+firewall-cmd --zone=libvirt --add-port=53317/udp --permanent
+firewall-cmd --reload
+
 # -----------------------------
 # Boot target
 # -----------------------------
