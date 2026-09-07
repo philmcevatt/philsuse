@@ -199,9 +199,6 @@ else
   try_install sddm konsole spectacle ark okular gwenview discover discover6
 fi
 
-try_install \
-  discover6
-
 # -----------------------------
 # Gaming tools
 # -----------------------------
@@ -211,7 +208,7 @@ try_install steam lutris mangohud obs-studio
 # -----------------------------
 # Other Software
 # -----------------------------
-section "Gaming tools"
+section "Other Software"
 try_install keepassxc qbittorrent kdenlive pinta kcalc okular gwenview kolourpaint libglvnd kate kcolorchooser
 
 # -----------------------------
@@ -261,26 +258,38 @@ usermod -aG kvm "${TARGET_USER}" 2>/dev/null || true
 
 ############################################################
 # KDE CONNECT FIREWALL
-# Allows KDE Connect through Fedora's public firewalld zone.
 ############################################################
-firewall-cmd --permanent --zone=home --add-service=kdeconnect
-firewall-cmd --reload
+section "KDE Connect firewall"
+if ! firewall-cmd --permanent --zone=public --add-service=kdeconnect; then
+  warn "Failed to enable KDE Connect firewall service"
+fi
+if ! firewall-cmd --reload; then
+  warn "Failed to reload firewall"
+fi
 
 ############################################################
 # LOCALSEND FIREWALL
-# Allows LocalSend through firewalld.
 ############################################################
-sudo firewall-cmd --permanent --zone=public --add-port=53317/tcp
-sudo firewall-cmd --permanent --zone=public --add-port=53317/udp
-sudo firewall-cmd --reload
-
-############################################################
-# LIBVIRT FIREWALL
-# Allows LibVirt through firewalld.
-############################################################
-firewall-cmd --zone=libvirt --add-port=53317/tcp --permanent
-firewall-cmd --zone=libvirt --add-port=53317/udp --permanent
-firewall-cmd --reload
+section "LocalSend firewall"
+if ! firewall-cmd --add-port=53317/tcp --permanent; then
+  warn "Failed to open LocalSend TCP port (public zone)"
+fi
+if ! firewall-cmd --add-port=53317/udp --permanent; then
+  warn "Failed to open LocalSend UDP port (public zone)"
+fi
+if firewall-cmd --get-zones | grep -qw libvirt; then
+  if ! firewall-cmd --zone=libvirt --add-port=53317/tcp --permanent; then
+    warn "Failed to open LocalSend TCP port (libvirt zone)"
+  fi
+  if ! firewall-cmd --zone=libvirt --add-port=53317/udp --permanent; then
+    warn "Failed to open LocalSend UDP port (libvirt zone)"
+  fi
+else
+  info "libvirt firewalld zone not present, skipping VM guest access for LocalSend."
+fi
+if ! firewall-cmd --reload; then
+  warn "Failed to reload firewall"
+fi
 
 # -----------------------------
 # Boot target
