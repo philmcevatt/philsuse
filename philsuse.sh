@@ -297,8 +297,7 @@ fi
 section "Boot configuration"
 
 systemctl set-default graphical.target || true
-echo 'DISPLAYMANAGER="sddm"' > /etc/sysconfig/displaymanager
-systemctl enable display-manager.service || true
+systemctl enable --force sddm.service || warn "Failed to enable sddm.service"
 
 # -----------------------------
 # Finish
