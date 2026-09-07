@@ -212,7 +212,7 @@ try_install steam lutris mangohud obs-studio
 # Other Software
 # -----------------------------
 section "Gaming tools"
-try_install keepassxc qbittorrent kdelive pinta kcalc okular gwenview kolourpaint libglvnd-gles kate kcolorchooser
+try_install keepassxc qbittorrent kdenlive pinta kcalc okular gwenview kolourpaint libglvnd kate kcolorchooser
 
 # -----------------------------
 # Flatpak apps
