@@ -186,7 +186,6 @@ KDE_CURATED_PACKAGES=(
   konsole
   libglvnd
   okular
-  sddm
   spectacle
 )
 
@@ -198,9 +197,8 @@ fi
 
 ############################################################
 # GRAPHICAL DISPLAY SUPPORT
-# SDDM on current Tumbleweed still expects the X11/XWayland
-# components to be present.
-# Must be installed before graphical.target is enabled.
+# Explicitly installs X11 and XWayland support required by
+# the Plasma/SDDM desktop setup.
 ############################################################
 section "Graphical display support"
 
@@ -208,7 +206,7 @@ GRAPHICAL_DISPLAY_READY=true
 
 if zypper -n install -y \
   xorg-x11-server \
-  xorg-x11-server-Xwayland; then
+  xwayland; then
 
   complete_section "Graphical display support"
 else
