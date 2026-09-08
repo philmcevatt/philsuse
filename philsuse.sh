@@ -204,41 +204,47 @@ fi
 ############################################################
 section "Graphical display support"
 
+GRAPHICAL_DISPLAY_READY=true
+
 if zypper -n install -y \
   xorg-x11-server \
   xorg-x11-server-Xwayland; then
 
   complete_section "Graphical display support"
 else
-  warn "X11/XWayland display support could not be fully installed. Do not rely on graphical boot until this is resolved."
+  warn "X11/XWayland display support could not be fully installed."
+  GRAPHICAL_DISPLAY_READY=false
 fi
 
 ############################################################
 # SDDM AND GRAPHICAL BOOT
-# X11/XWayland is deliberately installed above before changing
-# default.target, preventing the incorrect/non-working graphical
-# boot configuration seen on minimal Tumbleweed installs.
+# Only enables graphical boot when X11/XWayland was
+# successfully installed above.
 ############################################################
-section "Enable SDDM and graphical boot"
-GRAPHICAL_BOOT_READY=true
+if [[ "${GRAPHICAL_DISPLAY_READY}" == "true" ]]; then
+  section "Enable SDDM and graphical boot"
 
-if ! systemctl enable --force sddm.service; then
-  warn "Failed to enable sddm.service."
-  GRAPHICAL_BOOT_READY=false
-fi
+  GRAPHICAL_BOOT_READY=true
 
-if [[ "${GRAPHICAL_BOOT_READY}" == "true" ]]; then
-  if systemctl set-default graphical.target; then
-    echo "Default boot target set to graphical.target."
-    complete_section "Enable SDDM and graphical boot"
-  else
-    warn "Could not set graphical.target as the default boot target."
+  if ! systemctl enable --force sddm.service; then
+    warn "Failed to enable sddm.service."
+    GRAPHICAL_BOOT_READY=false
   fi
+
+  if [[ "${GRAPHICAL_BOOT_READY}" == "true" ]]; then
+    if systemctl set-default graphical.target; then
+      echo "Default boot target set to graphical.target."
+      complete_section "Enable SDDM and graphical boot"
+    else
+      warn "Could not set graphical.target as the default boot target."
+    fi
+  fi
+else
+  warn "Graphical boot was not enabled because X11/XWayland installation failed."
 fi
 
 # Deliberately do not restart SDDM here. This script is designed to
 # finish cleanly in the TTY and start the graphical login on reboot.
-# Restarting SDDM mid-script can steal the active VT while work remains.
 
 ############################################################
 # SYSTEM MANAGEMENT TOOLS
@@ -715,26 +721,40 @@ FASTFETCH_CONF="${FISH_CONF_DIR}/fastfetch.fish"
 
 FISH_STARTUP_READY=true
 
-if ! sudo -u "${TARGET_USER}" fish -c 'set -eU fish_greeting'; then
-  warn "Could not remove the default Fish greeting."
+# Set an empty universal greeting so Fish does not display
+# its default welcome message.
+if ! sudo -u "${TARGET_USER}" fish -c 'set -U fish_greeting'; then
+  warn "Could not disable the default Fish greeting."
   FISH_STARTUP_READY=false
 fi
 
-if ! install -d -o "${TARGET_USER}" -g "${TARGET_USER}" "${FISH_CONF_DIR}"; then
+# Ensure the user's Fish conf.d directory exists.
+if ! install -d \
+  -o "${TARGET_USER}" \
+  -g "${TARGET_USER}" \
+  "${FISH_CONF_DIR}"; then
+
   warn "Could not create the Fish conf.d directory."
   FISH_STARTUP_READY=false
 fi
 
+# Create a modular Fastfetch startup file rather than editing
+# config.fish directly.
 if [[ "${FISH_STARTUP_READY}" == "true" ]]; then
-  cat > "${FASTFETCH_CONF}" <<'EOF'
+  if cat > "${FASTFETCH_CONF}" <<'EOF'
 if status is-interactive
     fastfetch
 end
 EOF
-
-  chown "${TARGET_USER}:${TARGET_USER}" "${FASTFETCH_CONF}"
-
-  complete_section "Fish startup"
+  then
+    if chown "${TARGET_USER}:${TARGET_USER}" "${FASTFETCH_CONF}"; then
+      complete_section "Fish startup"
+    else
+      warn "Fastfetch startup file was created, but its ownership could not be corrected."
+    fi
+  else
+    warn "Could not create the Fastfetch Fish startup file."
+  fi
 fi
 
 ############################################################
