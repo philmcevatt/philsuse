@@ -196,30 +196,28 @@ else
 fi
 
 ############################################################
-# GRAPHICAL DISPLAY SUPPORT
-# Explicitly installs X11 and XWayland support required by
-# the Plasma/SDDM desktop setup.
+# X11 FOUNDATION
+# Installs openSUSE's current X11 desktop foundation.
+# --no-recommends keeps the pattern limited to its required
+# components rather than optional X11 extras.
 ############################################################
-section "Graphical display support"
+section "X11 Foundation"
 
-GRAPHICAL_DISPLAY_READY=true
+X11_READY=true
 
-if zypper -n install -y \
-  xorg-x11-server \
-  xwayland; then
-
-  complete_section "Graphical display support"
+if zypper -n install -y --no-recommends -t pattern x11; then
+  complete_section "X11 Foundation"
 else
-  warn "X11/XWayland display support could not be fully installed."
-  GRAPHICAL_DISPLAY_READY=false
+  warn "The X11 pattern could not be installed."
+  X11_READY=false
 fi
 
 ############################################################
 # SDDM AND GRAPHICAL BOOT
-# Only enables graphical boot when X11/XWayland was
+# Only enables graphical boot when the X11 foundation was
 # successfully installed above.
 ############################################################
-if [[ "${GRAPHICAL_DISPLAY_READY}" == "true" ]]; then
+if [[ "${X11_READY}" == "true" ]]; then
   section "Enable SDDM and graphical boot"
 
   GRAPHICAL_BOOT_READY=true
@@ -238,7 +236,7 @@ if [[ "${GRAPHICAL_DISPLAY_READY}" == "true" ]]; then
     fi
   fi
 else
-  warn "Graphical boot was not enabled because X11/XWayland installation failed."
+  warn "Graphical boot was not enabled because the X11 foundation failed to install."
 fi
 
 # Deliberately do not restart SDDM here. This script is designed to
@@ -293,7 +291,7 @@ section "Printing"
 
 PRINTING_PACKAGES=(
   cups
-  cups-filters
+  cups-filters2
   ghostscript
   nss-mdns
   gutenprint
