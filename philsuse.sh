@@ -172,28 +172,7 @@ fi
 # KDE applications and desktop components I want explicitly
 # installed regardless of what the Plasma pattern contains.
 ############################################################
-section "KDE Foundation: Curated Packages"
 
-KDE_CURATED_PACKAGES=(
-  ark
-  discover6
-  gwenview
-  kate
-  kcalc
-  kdeconnect-kde
-  kcolorchooser
-  kolourpaint
-  konsole
-  libglvnd
-  okular
-  spectacle
-)
-
-if zypper -n install -y "${KDE_CURATED_PACKAGES[@]}"; then
-  complete_section "KDE Foundation: Curated Packages"
-else
-  warn "One or more KDE Foundation: Curated Packages could not be installed."
-fi
 
 ############################################################
 # X11 FOUNDATION
